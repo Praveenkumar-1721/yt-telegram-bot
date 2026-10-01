@@ -12,18 +12,10 @@ ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
 
 app_flask = Flask(__name__)
 
-# Initialize Telegram Application globally so Gunicorn can load it properly
+# Initialize Telegram Application globally
 telegram_app = ApplicationBuilder().token(TOKEN).build()
 
-async def setup_handlers():
-    telegram_app.add_handler(CommandHandler("reply", reply_to_user))
-    telegram_app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_user_message))
-    await telegram_app.initialize()
-
-# Run setup during startup
-asyncio.run(setup_handlers())
-
-# User Message Handler
+# 1. First, define the User Message Handler function
 async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_message = update.message.text
@@ -40,7 +32,7 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_text, parse_mode="Markdown")
     await update.message.reply_text("Vanakkam! Ungaloda message nalla vanthu sernthuruchu. Seekiram ungalukku reply panrom.")
 
-# Admin Reply Handler
+# 2. Next, define the Admin Reply Handler function
 async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if user.id != ADMIN_CHAT_ID:
@@ -60,6 +52,15 @@ async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {e}")
 
+# 3. Now, setup the handlers (since functions are already defined above)
+async def setup_handlers():
+    telegram_app.add_handler(CommandHandler("reply", reply_to_user))
+    telegram_app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_user_message))
+    await telegram_app.initialize()
+
+# Run setup during startup
+asyncio.run(setup_handlers())
+
 @app_flask.route('/')
 def home():
     return "Bot is alive and running!"
@@ -69,11 +70,9 @@ def webhook():
     json_update = request.get_json(force=True)
     update = Update.de_json(json_update, telegram_app.bot)
     
-    # Run async update inside Flask using a new loop/thread safely
     asyncio.run(telegram_app.process_update(update))
     return "OK", 200
 
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 5000))
     app_flask.run(host='0.0.0.0', port=PORT)
-    
