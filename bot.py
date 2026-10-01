@@ -1,5 +1,6 @@
 import os
 import logging
+import asyncio
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, MessageHandler, CommandHandler, filters
@@ -10,15 +11,17 @@ TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID", "0"))
 
 app_flask = Flask(__name__)
-telegram_app = None
 
-async def setup_bot():
-    global telegram_app
-    telegram_app = ApplicationBuilder().token(TOKEN).build()
-    
+# Initialize Telegram Application globally so Gunicorn can load it properly
+telegram_app = ApplicationBuilder().token(TOKEN).build()
+
+async def setup_handlers():
     telegram_app.add_handler(CommandHandler("reply", reply_to_user))
     telegram_app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_user_message))
     await telegram_app.initialize()
+
+# Run setup during startup
+asyncio.run(setup_handlers())
 
 # User Message Handler
 async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -63,19 +66,14 @@ def home():
 
 @app_flask.route(f'/{TOKEN}', methods=['POST'])
 def webhook():
-    import asyncio
     json_update = request.get_json(force=True)
     update = Update.de_json(json_update, telegram_app.bot)
     
-    # Run async update inside Flask
+    # Run async update inside Flask using a new loop/thread safely
     asyncio.run(telegram_app.process_update(update))
     return "OK", 200
 
 if __name__ == '__main__':
-    import asyncio
-    asyncio.run(setup_bot())
-    
-    # Set Webhook automatically when starting on cloud (Optional or can set manually)
     PORT = int(os.environ.get('PORT', 5000))
     app_flask.run(host='0.0.0.0', port=PORT)
-  
+    
