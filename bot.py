@@ -66,7 +66,7 @@ async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_message = " ".join(context.args[1:])
 
     try:
-        await context.bot.send_message(chat_id=target_user_id, text=f"📢 Message from Admin/Creator:\n\n{reply_message}")
+        await context.bot.send_message(chat_id=target_user_id, text=f"🏷️ Message from Admin:\n\n{reply_message}")
         await update.message.reply_text("✅ Reply sent successfully!")
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {e}")
