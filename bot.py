@@ -15,7 +15,6 @@ app_flask = Flask(__name__)
 # Initialize Telegram Application globally
 telegram_app = ApplicationBuilder().token(TOKEN).build()
 
-# 1. First, define the User Message Handler function
 async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     user_message = update.message.text
@@ -32,7 +31,6 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_text, parse_mode="Markdown")
     await update.message.reply_text("Vanakkam! Ungaloda message nalla vanthu sernthuruchu. Seekiram ungalukku reply panrom.")
 
-# 2. Next, define the Admin Reply Handler function
 async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if user.id != ADMIN_CHAT_ID:
@@ -52,13 +50,12 @@ async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {e}")
 
-# 3. Now, setup the handlers (since functions are already defined above)
 async def setup_handlers():
     telegram_app.add_handler(CommandHandler("reply", reply_to_user))
     telegram_app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_user_message))
     await telegram_app.initialize()
 
-# Run setup during startup
+# Run initialization during startup
 asyncio.run(setup_handlers())
 
 @app_flask.route('/')
@@ -70,9 +67,39 @@ def webhook():
     json_update = request.get_json(force=True)
     update = Update.de_json(json_update, telegram_app.bot)
     
-    asyncio.run(telegram_app.process_update(update))
+    # Safe event loop handling for Flask webhook requests
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(telegram_app.process_update(update))
+    loop.close()
+    
     return "OK", 200
 
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 5000))
     app_flask.run(host='0.0.0.0', port=PORT)
+
+async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    user_message = update.message.text
+    
+    # Special Welcome Message for Admin / Creator
+    if user.id == ADMIN_CHAT_ID:
+        await update.message.reply_text(
+            "👑 Vanakkam Boss!\n"
+            "Cinematic Universe Support Bot active-ah irukku. "
+            "Users send panra messages ellam ungalukku inge varum. Reply panraku `/reply <User_ID> <Message>` use pannunga! 🎬✨"
+        )
+        return
+
+    # Regular User Message Handler (For YouTube Followers)
+    admin_text = (
+        f"📩 New Message from YouTube User!\n\n"
+        f"👤 Name: {user.full_name}\n"
+        f"🔗 Username: @{user.username if user.username else 'None'}\n"
+        f"🆔 User ID: `{user.id}`\n\n"
+        f"💬 Message:\n{user_message}"
+    )
+    await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_text, parse_mode="Markdown")
+    await update.message.reply_text("Vanakkam! Ungaloda message nalla vanthu sernthuruchu. Seekiram ungalukku reply panrom.")
+    
