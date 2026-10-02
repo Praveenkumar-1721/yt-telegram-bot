@@ -28,8 +28,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(
             "🎬 Official Support Gateway - Aesthetic Rhythmz!\n"
-"Hello! Thank you for reaching out. Please send your queries, edit requests, or feedback below, and our team will get back to you shortly."
-
+            "Hello! Thank you for reaching out. Please send your queries, edit requests, or feedback below, and our team will get back to you shortly."
         )
 
 # User Message Handler
@@ -48,8 +47,9 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         f"💬 Message:\n{user_message}"
     )
     await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_text, parse_mode="Markdown")
-    await update.message.reply_text(""Thanks for your message! 🎬✨ Your query has been successfully sent to the Aesthetic Rhythmz creator. Admin will review it and reply to you soon!"
-    ")
+    await update.message.reply_text(
+        "Thanks for your message! 🎬✨ Your query has been successfully sent to the Aesthetic Rhythmz creator. Admin will review it and reply to you soon!"
+    )
 
 # Admin Reply Handler
 async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -106,4 +106,4 @@ def webhook():
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 5000))
     app_flask.run(host='0.0.0.0', port=PORT)
-    
+        
