@@ -40,7 +40,6 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     if user.id == ADMIN_CHAT_ID:
         return  # Ignore normal text messages from admin to avoid loops
 
-    # Send notification to Admin for EVERY message sent by the user
     admin_text = (
         f"📩 New Message from YouTube User!\n\n"
         f"👤 Name: {user.full_name}\n"
@@ -71,6 +70,10 @@ async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Error: {e}")
 
+# Global event loop for handling requests safely
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 async def setup_handlers():
     telegram_app.add_handler(CommandHandler("start", start_command))
     telegram_app.add_handler(CommandHandler("reply", reply_to_user))
@@ -78,8 +81,8 @@ async def setup_handlers():
     await telegram_app.initialize()
     await telegram_app.start()
 
-# Run initialization during startup
-asyncio.run(setup_handlers())
+# Initialize handlers on startup using the main loop
+loop.run_until_complete(setup_handlers())
 
 @app_flask.route('/')
 def home():
@@ -91,11 +94,8 @@ def webhook():
         json_update = request.get_json(force=True)
         update = Update.de_json(json_update, telegram_app.bot)
         
-        # Proper async processing for PTB v20+ inside Flask webhook
-        async def process():
-            await telegram_app.process_update(update)
-
-        asyncio.run(process())
+        # Run update processing inside the persistent global loop
+        loop.run_until_complete(telegram_app.process_update(update))
     except Exception as e:
         logging.error(f"Error processing webhook: {e}")
         return "Internal Error", 500
