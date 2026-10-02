@@ -15,20 +15,32 @@ app_flask = Flask(__name__)
 # Initialize Telegram Application globally
 telegram_app = ApplicationBuilder().token(TOKEN).build()
 
-async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Start Command Handler (For both Admin & Users)
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    user_message = update.message.text
     
-    # Special Welcome Message for Admin / Creator
     if user.id == ADMIN_CHAT_ID:
         await update.message.reply_text(
             "👑 Vanakkam Boss!\n"
             "Cinematic Universe Support Bot active-ah irukku. "
             "Users send panra messages ellam ungalukku inge varum. Reply panraku `/reply <User_ID> <Message>` use pannunga! 🎬✨"
         )
-        return
+    else:
+        await update.message.reply_text(
+            "🎬 Vanakkam Nanba!\n"
+            "Cinematic Universe official support bot-ku ungalai anbuudan வரவேற்கிறோம்.\n\n"
+            "Ungaloda movie edit requests, queries, illa feedback-a inge message-ah anuppunga. Seekiram ungalukku reply panrom! ✨"
+        )
 
-    # Regular User Message Handler (For YouTube Followers)
+# User Message Handler
+async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    user_message = update.message.text
+    
+    if user.id == ADMIN_CHAT_ID:
+        return  # Ignore normal text messages from admin to avoid loops
+
+    # Send notification to Admin for EVERY message sent by the user
     admin_text = (
         f"📩 New Message from YouTube User!\n\n"
         f"👤 Name: {user.full_name}\n"
@@ -39,6 +51,7 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
     await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_text, parse_mode="Markdown")
     await update.message.reply_text("Vanakkam! Ungaloda message nalla vanthu sernthuruchu. Seekiram ungalukku reply panrom.")
 
+# Admin Reply Handler
 async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if user.id != ADMIN_CHAT_ID:
@@ -59,6 +72,7 @@ async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Error: {e}")
 
 async def setup_handlers():
+    telegram_app.add_handler(CommandHandler("start", start_command))
     telegram_app.add_handler(CommandHandler("reply", reply_to_user))
     telegram_app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), handle_user_message))
     await telegram_app.initialize()
@@ -77,7 +91,7 @@ def webhook():
         json_update = request.get_json(force=True)
         update = Update.de_json(json_update, telegram_app.bot)
         
-        # Proper async handling inside Flask webhook for PTB v20+
+        # Proper async processing for PTB v20+ inside Flask webhook
         async def process():
             await telegram_app.process_update(update)
 
