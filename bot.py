@@ -22,14 +22,14 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user.id == ADMIN_CHAT_ID:
         await update.message.reply_text(
             "👑 Vanakkam Boss!\n"
-            "Cinematic Universe Support Bot active-ah irukku. "
+            "Aesthetic Rhythmz Support Bot is active. "
             "Users send panra messages ellam ungalukku inge varum. Reply panraku `/reply <User_ID> <Message>` use pannunga! 🎬✨"
         )
     else:
         await update.message.reply_text(
-            "🎬 Vanakkam Nanba!\n"
-            "Cinematic Universe official support bot-ku ungalai anbuudan வரவேற்கிறோம்.\n\n"
-            "Ungaloda movie edit requests, queries, illa feedback-a inge message-ah anuppunga. Seekiram ungalukku reply panrom! ✨"
+            "🎬 Official Support Gateway - Aesthetic Rhythmz!\n"
+"Hello! Thank you for reaching out. Please send your queries, edit requests, or feedback below, and our team will get back to you shortly."
+
         )
 
 # User Message Handler
@@ -48,13 +48,14 @@ async def handle_user_message(update: Update, context: ContextTypes.DEFAULT_TYPE
         f"💬 Message:\n{user_message}"
     )
     await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=admin_text, parse_mode="Markdown")
-    await update.message.reply_text("Vanakkam! Ungaloda message nalla vanthu sernthuruchu. Seekiram ungalukku reply panrom.")
+    await update.message.reply_text(""Thanks for your message! 🎬✨ Your query has been successfully sent to the Aesthetic Rhythmz creator. Admin will review it and reply to you soon!"
+    ")
 
 # Admin Reply Handler
 async def reply_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if user.id != ADMIN_CHAT_ID:
-        await update.message.reply_text("Unakku antha permission illa da!")
+        await update.message.reply_text("Permission Denied!")
         return
 
     if len(context.args) < 2:
